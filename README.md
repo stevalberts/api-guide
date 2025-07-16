@@ -1,52 +1,123 @@
 # Openlyne OTP
 
-A simple and reliable SMS OTP (One-Time Password) service for JavaScript and Python applications. Built with [Africa's Talking](https://africastalking.com) SMS API for reliable message delivery across Africa and beyond.
+[![npm version](https://badge.fury.io/js/openlyne-otp.svg)](https://badge.fury.io/js/openlyne-otp)
+[![Python](https://img.shields.io/badge/python-3.6%2B-blue.svg)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+> SMS OTP verification service powered by Africa's Talking API
 
-- ✅ Send SMS OTP codes
-- ✅ Verify OTP codes
-- ✅ Test mode for development
-- ✅ Production mode for live applications
-- ✅ Simple API integration
-- ✅ Error handling included
-- ✅ Powered by Africa's Talking SMS API
+## Installation
+
+<details>
+<summary>📦 JavaScript/Node.js</summary>
+
+```bash
+npm install openlyne-otp
+# or
+yarn add openlyne-otp
+```
+
+</details>
+
+<details>
+<summary>🐍 Python</summary>
+
+```bash
+pip install openlyne-otp
+# or
+pip install requests  # if using the snippet below
+```
+
+</details>
 
 ## Quick Start
 
-### JavaScript Setup
+<details>
+<summary>⚡ JavaScript</summary>
 
-1. Create `otp.js` file:
+```javascript
+const { sendOTP, verifyOTP } = require('./otp');
+
+const API_KEY = 'your-api-key-here';
+
+// Send OTP
+await sendOTP('user123', '256700000000', true); // production mode
+
+// Verify OTP
+const result = await verifyOTP('user123', '123456');
+console.log(result.valid ? 'Valid' : 'Invalid');
+```
+
+</details>
+
+<details>
+<summary>🐍 Python</summary>
+
+```python
+from otp import send_otp, verify_otp
+
+API_KEY = 'your-api-key-here'
+
+# Send OTP
+send_otp('user123', '256700000000', True)  # production mode
+
+# Verify OTP
+result = verify_otp('user123', '123456')
+print('Valid' if result['valid'] else 'Invalid')
+```
+
+</details>
+
+## API Reference
+
+### `sendOTP(userID, phoneNumber, production?)`
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `userID` | string | ✅ | Unique user identifier |
+| `phoneNumber` | string | ✅ | International format (e.g., `256700000000`) |
+| `production` | boolean | ❌ | `true` for live SMS, `false`/omit for test mode |
+
+**Returns:** `Promise<{success: boolean, message: string}>`
+
+### `verifyOTP(userID, otpCode)`
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `userID` | string | ✅ | Same ID used in `sendOTP` |
+| `otpCode` | string | ✅ | 6-digit OTP code |
+
+**Returns:** `Promise<{valid: boolean, message: string}>`
+
+## Implementation
+
+<details>
+<summary>📱 JavaScript Implementation</summary>
 
 ```javascript
 const API_KEY = 'your-api-key-here';
+const BASE_URL = 'https://openlyne.sliplane.app/webhook';
 
-// Send OTP to a phone number
-async function sendOTP(userID, phoneNumber, production) {
-  const body = { uid: userID, phone: phoneNumber };
-  if (production !== undefined) {
-    body.production = production;
-  }
-  
-  const response = await fetch('https://openlyne.sliplane.app/webhook/send-otp', {
+async function sendOTP(userID, phoneNumber, production = false) {
+  const response = await fetch(`${BASE_URL}/send-otp`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-API-Key': API_KEY,
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      uid: userID,
+      phone: phoneNumber,
+      production
+    }),
   });
   
-  if (!response.ok) {
-    throw new Error('Failed to send OTP');
-  }
-  
-  return await response.json();
+  if (!response.ok) throw new Error('Failed to send OTP');
+  return response.json();
 }
 
-// Check if the OTP code is correct
 async function verifyOTP(userID, otpCode) {
-  const response = await fetch('https://openlyne.sliplane.app/webhook/verify-otp', {
+  const response = await fetch(`${BASE_URL}/verify-otp`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -58,69 +129,37 @@ async function verifyOTP(userID, otpCode) {
     }),
   });
   
-  if (!response.ok) {
-    throw new Error('Failed to verify OTP');
-  }
-  
-  return await response.json();
+  if (!response.ok) throw new Error('Failed to verify OTP');
+  return response.json();
 }
 
-// Export functions to use in other files
 module.exports = { sendOTP, verifyOTP };
 ```
 
-2. Use in your application:
+</details>
 
-```javascript
-const { sendOTP, verifyOTP } = require('./otp.js');
-
-async function handleOTP() {
-  try {
-    // Send OTP (test mode)
-    await sendOTP('user123', '256700000000');
-    console.log('Test OTP sent!');
-    
-    // Send OTP (production mode)
-    await sendOTP('user123', '256700000000', true);
-    console.log('Production OTP sent!');
-    
-    // Verify OTP
-    await verifyOTP('user123', '123456');
-    console.log('OTP verified!');
-    
-  } catch (error) {
-    console.log('Error:', error.message);
-  }
-}
-```
-
-### Python Setup
-
-1. Install dependencies:
-```bash
-pip install requests
-```
-
-2. Create `otp.py` file:
+<details>
+<summary>🐍 Python Implementation</summary>
 
 ```python
 import requests
 
 API_KEY = 'your-api-key-here'
+BASE_URL = 'https://openlyne.sliplane.app/webhook'
 
-def send_otp(user_id, phone_number, production=None):
-    """Send OTP to a phone number"""
-    body = {'uid': user_id, 'phone': phone_number}
-    if production is not None:
-        body['production'] = production
-    
+def send_otp(user_id, phone_number, production=False):
+    """Send OTP to phone number"""
     response = requests.post(
-        'https://openlyne.sliplane.app/webhook/send-otp',
+        f'{BASE_URL}/send-otp',
         headers={
             'Content-Type': 'application/json',
             'X-API-Key': API_KEY,
         },
-        json=body
+        json={
+            'uid': user_id,
+            'phone': phone_number,
+            'production': production
+        }
     )
     
     if not response.ok:
@@ -129,9 +168,9 @@ def send_otp(user_id, phone_number, production=None):
     return response.json()
 
 def verify_otp(user_id, otp_code):
-    """Check if the OTP code is correct"""
+    """Verify OTP code"""
     response = requests.post(
-        'https://openlyne.sliplane.app/webhook/verify-otp',
+        f'{BASE_URL}/verify-otp',
         headers={
             'Content-Type': 'application/json',
             'X-API-Key': API_KEY,
@@ -148,160 +187,172 @@ def verify_otp(user_id, otp_code):
     return response.json()
 ```
 
-3. Use in your application:
+</details>
 
-```python
-from otp import send_otp, verify_otp
+## Phone Number Formats
 
-def handle_otp():
-    try:
-        # Send OTP (test mode)
-        send_otp('user123', '256700000000')
-        print('Test OTP sent!')
-        
-        # Send OTP (production mode)
-        send_otp('user123', '256700000000', True)
-        print('Production OTP sent!')
-        
-        # Verify OTP
-        verify_otp('user123', '123456')
-        print('OTP verified!')
-        
-    except Exception as error:
-        print(f'Error: {error}')
+<details>
+<summary>🌍 Supported Countries</summary>
 
-if __name__ == '__main__':
-    handle_otp()
-```
+| Country | Format | Example |
+|---------|---------|---------|
+| 🇺🇬 Uganda | `256XXXXXXXXX` | `256700000000` |
+| 🇰🇪 Kenya | `254XXXXXXXXX` | `254700000000` |
+| 🇹🇿 Tanzania | `255XXXXXXXXX` | `255700000000` |
+| 🇷🇼 Rwanda | `250XXXXXXXXX` | `250700000000` |
+| 🇳🇬 Nigeria | `234XXXXXXXXX` | `234700000000` |
+| 🇬🇭 Ghana | `233XXXXXXXXX` | `233700000000` |
+| 🇿🇦 South Africa | `27XXXXXXXXX` | `27700000000` |
+| 🇺🇸 United States | `1XXXXXXXXXX` | `12345678901` |
+| 🇬🇧 United Kingdom | `44XXXXXXXXX` | `447700000000` |
 
-## API Reference
-
-### `sendOTP(userID, phoneNumber, production)`
-
-Sends an OTP code to the specified phone number via Africa's Talking SMS API.
-
-**Parameters:**
-- `userID` (string): Unique identifier for the user
-- `phoneNumber` (string): Phone number in international format
-- `production` (boolean, optional): Set to `true` for real SMS, leave empty for test mode
-
-**Returns:** Promise/dict with API response
-
-### `verifyOTP(userID, otpCode)`
-
-Verifies the OTP code entered by the user.
-
-**Parameters:**
-- `userID` (string): Same identifier used in `sendOTP`
-- `otpCode` (string): The OTP code to verify
-
-**Returns:** Promise/dict with verification result
-
-## Usage Examples
-
-### Test Mode (Default)
-```javascript
-// JavaScript
-await sendOTP('user123', '256700000000');
-
-# Python
-send_otp('user123', '256700000000')
-```
-
-### Production Mode
-```javascript
-// JavaScript
-await sendOTP('user123', '256700000000', true);
-
-# Python
-send_otp('user123', '256700000000', True)
-```
-
-### Verify OTP
-```javascript
-// JavaScript
-await verifyOTP('user123', '123456');
-
-# Python
-verify_otp('user123', '123456')
-```
-
-## Phone Number Format
-
-Always use international format (supported by Africa's Talking):
-- **Uganda**: `256700000000`
-- **Kenya**: `254700000000`
-- **Tanzania**: `255700000000`
-- **Rwanda**: `250700000000`
-- **Nigeria**: `234700000000`
-- **Ghana**: `233700000000`
-- **South Africa**: `27700000000`
-- **US**: `12345678901`
-- **UK**: `447700000000`
+</details>
 
 ## Testing
 
-For testing, use the default mode (no `production` parameter). Test messages will appear in the Africa's Talking simulator:
+<details>
+<summary>🧪 Test Mode</summary>
 
-🔗 **Test Simulator**: https://simulator.africastalking.com/
+```javascript
+// Test mode (default)
+await sendOTP('user123', '256700000000');
+```
+
+View test messages: [Africa's Talking Simulator](https://simulator.africastalking.com/)
+
+</details>
+
+<details>
+<summary>🚀 Production Mode</summary>
+
+```javascript
+// Production mode
+await sendOTP('user123', '256700000000', true);
+```
+
+Real SMS will be sent to the phone number.
+
+</details>
 
 ## Error Handling
 
-Both JavaScript and Python implementations include proper error handling:
+<details>
+<summary>⚠️ Common Errors</summary>
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `Failed to send OTP` | Invalid API key or phone format | Check credentials and use international format |
+| `Failed to verify OTP` | Wrong user ID or expired code | Ensure same `userID` for send/verify |
+| `Network timeout` | Connection issues | Retry with exponential backoff |
+| `OTP expired` | Code too old | Resend new OTP |
+
+</details>
+
+<details>
+<summary>🛠️ Implementation</summary>
 
 ```javascript
 // JavaScript
 try {
-  await sendOTP('user123', '256700000000');
+  await sendOTP('user123', '256700000000', true);
 } catch (error) {
-  console.log('Error:', error.message);
+  console.error('OTP Error:', error.message);
 }
 ```
 
 ```python
 # Python
 try:
-    send_otp('user123', '256700000000')
+    send_otp('user123', '256700000000', True)
 except Exception as error:
-    print(f'Error: {error}')
+    print(f'OTP Error: {error}')
 ```
 
-## Common Issues
+</details>
 
-| Issue | Solution |
-|-------|----------|
-| "Failed to send OTP" | Check API key and phone number format |
-| "Failed to verify OTP" | Ensure same userID for send and verify |
-| Network errors | Check internet connection |
-| OTP expired | OTP codes expire after a few minutes |
-| SMS not delivered | Check if phone number is supported by Africa's Talking |
+## Environment Variables
 
-## Project Structure
+<details>
+<summary>🔐 Configuration</summary>
 
-```
-your-project/
-├── otp.js (or otp.py)     # OTP functions
-├── app.js (or app.py)     # Your main application
-└── README.md              # This file
+```bash
+# .env file
+OPENLYNE_API_KEY=your-api-key-here
+OPENLYNE_BASE_URL=https://openlyne.sliplane.app/webhook
 ```
 
-## API Endpoints
+```javascript
+// JavaScript
+const API_KEY = process.env.OPENLYNE_API_KEY;
+```
 
-- **Send OTP**: `POST https://openlyne.sliplane.app/webhook/send-otp`
-- **Verify OTP**: `POST https://openlyne.sliplane.app/webhook/verify-otp`
+```python
+# Python
+import os
+API_KEY = os.getenv('OPENLYNE_API_KEY')
+```
 
-## SMS Provider
+</details>
 
-This service uses [Africa's Talking](https://africastalking.com) SMS API for reliable message delivery. Africa's Talking provides excellent coverage across Africa and supports international messaging.
+## Examples
 
-## Support
+<details>
+<summary>🔄 Complete Flow</summary>
 
-For issues and questions, please create an issue in this repository.
+```javascript
+async function authenticateUser(phoneNumber) {
+  const userId = generateUserId();
+  
+  try {
+    // Send OTP
+    await sendOTP(userId, phoneNumber, true);
+    console.log('OTP sent successfully');
+    
+    // Get user input (pseudo-code)
+    const userOTP = await getUserInput();
+    
+    // Verify OTP
+    const result = await verifyOTP(userId, userOTP);
+    
+    if (result.valid) {
+      console.log('User authenticated');
+      return { success: true, userId };
+    } else {
+      console.log('Invalid OTP');
+      return { success: false, error: 'Invalid OTP' };
+    }
+  } catch (error) {
+    console.error('Authentication failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+```
+
+</details>
+
+## Contributing
+
+<details>
+<summary>🤝 Development</summary>
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/new-feature`
+3. Commit changes: `git commit -am 'Add new feature'`
+4. Push to branch: `git push origin feature/new-feature`
+5. Submit pull request
+
+</details>
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT © [Openlyne Team](https://github.com/openlyne)
 
 ---
 
-Made with ❤️ by the Openlyne team | Powered by [Africa's Talking](https://africastalking.com) SMS API
+**Powered by** [Africa's Talking](https://africastalking.com) • **Made with** ❤️ **in Uganda**
+
+<p align="center">
+  <a href="https://github.com/openlyne/otp/issues">Report Bug</a> •
+  <a href="https://github.com/openlyne/otp/issues">Request Feature</a> •
+  <a href="https://docs.openlyne.com">Documentation</a>
+</p>
